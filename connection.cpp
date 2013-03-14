@@ -126,13 +126,23 @@ void Connection::receiveFile(QString path, int size){
  */
 int Connection::fileWeight()
 {
-    int response = 0;
-    if((read(socket_, &response, sizeof(response))) > 0){
+    char response[30] = "";
+    if((::read(socket_, response, sizeof(response))) > 0){
     }
     else{
         qDebug()<<"didn't work well :(";
     }
-    return ntohl(response);
+
+    // send aknowledgment
+    char bufMessage[BUFFER_MESSAGE_SIZE];
+    bcopy("SIZE-OK", bufMessage, BUFFER_MESSAGE_SIZE);
+
+    if(write(socket_,bufMessage,BUFFER_MESSAGE_SIZE) <0){
+       this->error("Cannot send message: ");
+       exit(1);
+    }
+
+    return atoi(response);
 }
 
 /**
@@ -166,10 +176,12 @@ void Connection::run()
 
             qDebug()<<"Waiting for question from client";
             int length;
-
-            if((length = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE -1)) > 0){
+            memset(bufMessage,'\0',BUFFER_MESSAGE_SIZE);
+            if((length = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE -1)) > 0){                
+                qDebug()<<bufMessage;
                 if(strcmp(bufMessage,"DISCONNECT") == 0){
                     //client asking to quit
+                    qDebug()<<"stop message";
                     again = false;
                     server_->removeConnection(uid_);
                 }
@@ -178,6 +190,7 @@ void Connection::run()
                     askWork();
                 }
                 else{
+                    qDebug()<<"unknown message";
                     again = false;
                     this->error("the following instruction doesn't make sense: ");
                 }

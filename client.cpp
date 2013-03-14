@@ -68,7 +68,7 @@ void Client::run()
     qDebug()<<"connection established!";
 
     //Waiting for server
-    if((longueur = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE -1)) > 0){
+    if((longueur = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE)) > 0){
             //
             if(strcmp(bufMessage,"CONNECT-OK") == 0){
                 //connection ok
@@ -90,18 +90,19 @@ void Client::run()
 void Client::sendFile()
 {
     qDebug()<<"send a file!";
-
+int longueur;
     char bufMessage[BUFFER_MESSAGE_SIZE];
     char bufMessage2[BUFFER_MESSAGE_SIZE];
     bcopy("WORK", bufMessage, BUFFER_MESSAGE_SIZE);
+    bcopy("TESTTESTTESTTES", bufMessage2, BUFFER_MESSAGE_SIZE);
 
-    if(write(socket_,bufMessage,BUFFER_MESSAGE_SIZE) <0){
+    if(::write(socket_,bufMessage,BUFFER_MESSAGE_SIZE) <0){
        this->error("Cannot send message to server: ");
        exit(1);
     }
 
-    QThread::sleep(2);
-    if((::read(socket_, bufMessage2, BUFFER_MESSAGE_SIZE -1)) > 0){
+    //QThread::sleep(2);
+    if((longueur = ::read(socket_, bufMessage2, BUFFER_MESSAGE_SIZE)) > 0){
         //
         qDebug()<<bufMessage2;
         //problem with that buffer. All seems to be 1o to far...
@@ -109,7 +110,8 @@ void Client::sendFile()
         //then you add a \0 in front at every call
         //if sleep isn't here, bufMessage2 is bullshit the first time
         //then correct the second and the generate a sigpipe error "broken pipe" on the write upside.
-        if(strcmp(bufMessage2,"WORK-OK") == 0){
+        if(true){
+        //if(strcmp(bufMessage2,"WORK-OK") == 0){
             qDebug()<<"Ready to go!";
 
             QFile f(controler_->getIn());
@@ -167,10 +169,21 @@ void Client::sendTrame(char* data){
 }
 
 void Client::sendSize(int t){
-    int tmp = htonl(t);
-    if(write(socket_,&tmp,sizeof(tmp)) <0){
-       this->error("impossible d'envoyer");
+    char tmp[30] = "";
+    sprintf(tmp, "%i", t);
+    if(write(socket_,tmp,sizeof(tmp)) <0){
+       this->error("Unable to send");
        exit(1);
     }
+
+    //wait for acquittement
+
+    int longueur;
+    char bufMessage[BUFFER_MESSAGE_SIZE];
+    if((longueur = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE -1)) > 0){
+        qDebug()<<bufMessage;
+    }
+
+
 
 }
