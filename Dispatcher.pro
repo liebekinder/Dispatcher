@@ -14,8 +14,15 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
     controler.cpp \
-    window.cpp
+    window.cpp \
+    server.cpp \
+    connection.cpp \
+    client.cpp
 
 HEADERS  += \
     controler.h \
-    window.h
+    window.h \
+    server.h \
+    Parameters.h \
+    connection.h \
+    client.h
