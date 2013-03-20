@@ -56,34 +56,16 @@ void Connection::work(){
        exit(1);
     }
 
-    int fileW;
-    if((fileW = fileWeight()) > 0){
+    int fileW = fileWeight();
+    qDebug()<<fileW;
+    if(fileW > 0){
         qDebug()<<"Waiting for a file of "+QString::number(fileW)+" o";
         tempFile_ = QString::number(qrand() % 50000);
         receiveFile(tempFile_,fileW);
     }
 }
 
-void Connection::sendMessage(char * s)
-{
-    char bufMessage[BUFFER_MESSAGE_SIZE];
-    bcopy(s, bufMessage, BUFFER_MESSAGE_SIZE);
 
-    if(write(socket_,bufMessage,BUFFER_MESSAGE_SIZE) <0){
-       this->error("Cannot send message: ");
-       exit(1);
-    }
-}
-
-void Connection::receiveMessage(char * s)
-{
-    int longueur;
-    char bufMessage[BUFFER_MESSAGE_SIZE];
-    if((longueur = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE -1)) > 0){
-    }
-    bcopy(bufMessage, s, BUFFER_MESSAGE_SIZE);
-
-}
 
 /**
  * receive the client file
@@ -117,6 +99,16 @@ void Connection::receiveFile(QString path, int size){
             }
         }
         //loop
+
+        //data receive complete
+        char bufMessage[BUFFER_MESSAGE_SIZE];
+        bcopy("RECEPT-OK", bufMessage, BUFFER_MESSAGE_SIZE);
+        qDebug()<<"reception complete";
+
+        if(write(socket_,bufMessage,BUFFER_MESSAGE_SIZE) <0){
+           this->error("Cannot send message: ");
+           exit(1);
+        }
     }
 }
 /**
@@ -126,8 +118,19 @@ void Connection::receiveFile(QString path, int size){
  */
 int Connection::fileWeight()
 {
-    char response[30] = "";
-    if((::read(socket_, response, sizeof(response))) > 0){
+    qDebug()<<"file weight...";
+    char subbf[BUFFER_MESSAGE_SIZE];
+    char response[BUFFER_MESSAGE_SIZE];
+    memcpy(response, "", BUFFER_MESSAGE_SIZE);
+    QThread::sleep(1);
+    if((::read(socket_, response, BUFFER_MESSAGE_SIZE)) > 0){
+        if(response[0] =='\0'){
+            memcpy(subbf, &response[1], BUFFER_MESSAGE_SIZE-1);
+            subbf[BUFFER_MESSAGE_SIZE-1] = '\0';
+        }
+        else{
+            memcpy(subbf, response, BUFFER_MESSAGE_SIZE);
+        }
     }
     else{
         qDebug()<<"didn't work well :(";
@@ -141,8 +144,8 @@ int Connection::fileWeight()
        this->error("Cannot send message: ");
        exit(1);
     }
-
-    return atoi(response);
+    int returnValue = atoi(subbf);
+    return returnValue;
 }
 
 /**
@@ -208,5 +211,26 @@ void Connection::run()
     qDebug()<<"closing socket...";
 
     emit finished();
+
+}
+
+void Connection::sendMessage(char * s)
+{
+    char bufMessage[BUFFER_MESSAGE_SIZE];
+    bcopy(s, bufMessage, BUFFER_MESSAGE_SIZE);
+
+    if(write(socket_,bufMessage,BUFFER_MESSAGE_SIZE) <0){
+       this->error("Cannot send message: ");
+       exit(1);
+    }
+}
+
+void Connection::receiveMessage(char * s)
+{
+    int longueur;
+    char bufMessage[BUFFER_MESSAGE_SIZE];
+    if((longueur = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE)) > 0){
+    }
+    bcopy(bufMessage, s, BUFFER_MESSAGE_SIZE);
 
 }

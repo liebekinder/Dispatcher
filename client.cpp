@@ -92,26 +92,34 @@ void Client::sendFile()
     qDebug()<<"send a file!";
 int longueur;
     char bufMessage[BUFFER_MESSAGE_SIZE];
-    char bufMessage2[BUFFER_MESSAGE_SIZE];
     bcopy("WORK", bufMessage, BUFFER_MESSAGE_SIZE);
-    bcopy("TESTTESTTESTTES", bufMessage2, BUFFER_MESSAGE_SIZE);
 
     if(::write(socket_,bufMessage,BUFFER_MESSAGE_SIZE) <0){
        this->error("Cannot send message to server: ");
        exit(1);
     }
 
-    //QThread::sleep(2);
-    if((longueur = ::read(socket_, bufMessage2, BUFFER_MESSAGE_SIZE)) > 0){
+    memcpy(bufMessage, "", BUFFER_MESSAGE_SIZE);
+    if((longueur = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE)) > 0){
         //
-        qDebug()<<bufMessage2;
+        qDebug()<<bufMessage;
         //problem with that buffer. All seems to be 1o to far...
         //here the value is \0WORK_OK the first time
         //then you add a \0 in front at every call
-        //if sleep isn't here, bufMessage2 is bullshit the first time
+        //if sleep isn't here, bufMessage is bullshit the first time
         //then correct the second and the generate a sigpipe error "broken pipe" on the write upside.
-        if(true){
-        //if(strcmp(bufMessage2,"WORK-OK") == 0){
+
+        char subbf[BUFFER_MESSAGE_SIZE];
+        if(bufMessage[0] =='\0'){
+            memcpy(subbf, &bufMessage[1], BUFFER_MESSAGE_SIZE-1);
+            subbf[BUFFER_MESSAGE_SIZE-1] = '\0';
+        }
+        else{
+            memcpy(subbf, bufMessage, BUFFER_MESSAGE_SIZE);
+        }
+
+        //if(true){
+        if(strcmp(subbf,"WORK-OK") == 0){
             qDebug()<<"Ready to go!";
 
             QFile f(controler_->getIn());
@@ -143,16 +151,30 @@ int longueur;
                         byteRead -= byteWritten;
                     }
                 }
+
+                //aknoledgment of correct received file
+                memcpy(bufMessage, "", BUFFER_MESSAGE_SIZE);
+                if((::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE)) > 0){
+                    if(bufMessage[0] =='\0'){
+                        memcpy(subbf, &bufMessage[1], BUFFER_MESSAGE_SIZE-1);
+                        subbf[BUFFER_MESSAGE_SIZE-1] = '\0';
+                    }
+                    else{
+                        memcpy(subbf, bufMessage, BUFFER_MESSAGE_SIZE);
+                    }
+                        qDebug()<< subbf;
+                }
             }
             else{
                 qDebug()<<"unable to open file";
             }
         }
-        else if(strcmp(bufMessage2,"WORK-NO") == 0){
+        else if(strcmp(subbf,"WORK-NO") == 0){
             qDebug()<<"No work wanted!";
         }
         else{
             qDebug()<<"The response doesn't make sense...";
+            qDebug()<<subbf;
             //close(socket_);
         }
     }
@@ -169,18 +191,25 @@ void Client::sendTrame(char* data){
 }
 
 void Client::sendSize(int t){
-    char tmp[30] = "";
+    char tmp[BUFFER_MESSAGE_SIZE];
+    memcpy(tmp, "", BUFFER_MESSAGE_SIZE);
     sprintf(tmp, "%i", t);
-    if(write(socket_,tmp,sizeof(tmp)) <0){
+    qDebug()<<"file to send weight";
+    qDebug()<<tmp;
+
+    if(::write(socket_,tmp,BUFFER_MESSAGE_SIZE) <0){
        this->error("Unable to send");
        exit(1);
+    }
+    for(int i=0; i<BUFFER_MESSAGE_SIZE;++i){
+        qDebug()<<tmp[i];
     }
 
     //wait for acquittement
 
     int longueur;
     char bufMessage[BUFFER_MESSAGE_SIZE];
-    if((longueur = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE -1)) > 0){
+    if((longueur = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE)) > 0){
         qDebug()<<bufMessage;
     }
 
