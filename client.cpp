@@ -68,7 +68,7 @@ void Client::run()
     qDebug()<<"connection established!";
 
     //Waiting for server
-    if((longueur = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE)) > 0){
+    if((longueur = ::recv(socket_, bufMessage, BUFFER_MESSAGE_SIZE,0)) > 0){
             //
             if(strcmp(bufMessage,"CONNECT-OK") == 0){
                 //connection ok
@@ -94,13 +94,13 @@ int longueur;
     char bufMessage[BUFFER_MESSAGE_SIZE];
     bcopy("WORK", bufMessage, BUFFER_MESSAGE_SIZE);
 
-    if(::write(socket_,bufMessage,BUFFER_MESSAGE_SIZE) <0){
+    if(::send(socket_,bufMessage,BUFFER_MESSAGE_SIZE,0) <0){
        this->error("Cannot send message to server: ");
        exit(1);
     }
 
     memcpy(bufMessage, "", BUFFER_MESSAGE_SIZE);
-    if((longueur = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE)) > 0){
+    if((longueur = ::recv(socket_, bufMessage, BUFFER_MESSAGE_SIZE,0)) > 0){
         //
         qDebug()<<bufMessage;
         //problem with that buffer. All seems to be 1o to far...
@@ -143,7 +143,7 @@ int longueur;
                     void* p = data;
                     while(byteRead >0){
                         qDebug()<<"sending a packet";
-                        byteWritten = write(socket_,p,byteRead);
+                        byteWritten = send(socket_,p,byteRead,0);
                         if(byteWritten <=0){
                             qDebug()<<"fail to send packet";
                             exit(1);
@@ -154,7 +154,7 @@ int longueur;
 
                 //aknoledgment of correct received file
                 memcpy(bufMessage, "", BUFFER_MESSAGE_SIZE);
-                if((::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE)) > 0){
+                if((::recv(socket_, bufMessage, BUFFER_MESSAGE_SIZE,0)) > 0){
                     if(bufMessage[0] =='\0'){
                         memcpy(subbf, &bufMessage[1], BUFFER_MESSAGE_SIZE-1);
                         subbf[BUFFER_MESSAGE_SIZE-1] = '\0';
@@ -183,7 +183,7 @@ int longueur;
 
 void Client::sendTrame(char* data){
 
-    if(write(socket_,data,sizeof(data)) <0){
+    if(send(socket_,data,sizeof(data),0) <0){
        qDebug()<<"Have not be able to send";
        exit(1);
     }
@@ -197,7 +197,7 @@ void Client::sendSize(int t){
     qDebug()<<"file to send weight";
     qDebug()<<tmp;
 
-    if(::write(socket_,tmp,BUFFER_MESSAGE_SIZE) <0){
+    if(::send(socket_,tmp,BUFFER_MESSAGE_SIZE,0) <0){
        this->error("Unable to send");
        exit(1);
     }
@@ -209,7 +209,7 @@ void Client::sendSize(int t){
 
     int longueur;
     char bufMessage[BUFFER_MESSAGE_SIZE];
-    if((longueur = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE)) > 0){
+    if((longueur = ::recv(socket_, bufMessage, BUFFER_MESSAGE_SIZE,0)) > 0){
         qDebug()<<bufMessage;
     }
 

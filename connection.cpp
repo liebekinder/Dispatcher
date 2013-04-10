@@ -51,7 +51,7 @@ void Connection::work(){
     bcopy("WORK-OK", bufMessage, BUFFER_MESSAGE_SIZE);
     qDebug()<<"Work accepted";
 
-    if(write(socket_,bufMessage,BUFFER_MESSAGE_SIZE) <0){
+    if(send(socket_,bufMessage,BUFFER_MESSAGE_SIZE,0) <0){
        this->error("Cannot send message: ");
        exit(1);
     }
@@ -76,6 +76,7 @@ void Connection::work(){
 void Connection::receiveFile(QString path, int size){
 
     char trame[BUFFER_FRAME];
+    char subbf[BUFFER_FRAME];
     int longueur;
     int readByte = 0;
 
@@ -83,12 +84,20 @@ void Connection::receiveFile(QString path, int size){
     f.open(QIODevice::ReadWrite|QIODevice::Truncate);
     f.close();
     if(f.open(QIODevice::WriteOnly|QIODevice::Append)){
-
+    int i=0;
         while(readByte < size){
-            longueur = read(socket_, trame, BUFFER_FRAME);
+            longueur = recv(socket_, trame, BUFFER_FRAME,0);
             if(longueur > 0){
-                f.write(trame,longueur);
+                if(i==0 && trame[0] =='\0'){
+                    memcpy(subbf, &trame[1], BUFFER_FRAME);
+                    subbf[BUFFER_FRAME-1] = '\0';
+                }
+                else{
+                    memcpy(subbf, trame, BUFFER_FRAME);
+                }
+                f.write(subbf,longueur);
                 readByte+=longueur;
+                i++;
             }
             else{
                 if(longueur == -1) qDebug()<<"didn't manage to read this one";
@@ -105,7 +114,7 @@ void Connection::receiveFile(QString path, int size){
         bcopy("RECEPT-OK", bufMessage, BUFFER_MESSAGE_SIZE);
         qDebug()<<"reception complete";
 
-        if(write(socket_,bufMessage,BUFFER_MESSAGE_SIZE) <0){
+        if(send(socket_,bufMessage,BUFFER_MESSAGE_SIZE,0) <0){
            this->error("Cannot send message: ");
            exit(1);
         }
@@ -123,7 +132,7 @@ int Connection::fileWeight()
     char response[BUFFER_MESSAGE_SIZE];
     memcpy(response, "", BUFFER_MESSAGE_SIZE);
     QThread::sleep(1);
-    if((::read(socket_, response, BUFFER_MESSAGE_SIZE)) > 0){
+    if((::recv(socket_, response, BUFFER_MESSAGE_SIZE,0)) > 0){
         if(response[0] =='\0'){
             memcpy(subbf, &response[1], BUFFER_MESSAGE_SIZE-1);
             subbf[BUFFER_MESSAGE_SIZE-1] = '\0';
@@ -140,7 +149,7 @@ int Connection::fileWeight()
     char bufMessage[BUFFER_MESSAGE_SIZE];
     bcopy("SIZE-OK", bufMessage, BUFFER_MESSAGE_SIZE);
 
-    if(write(socket_,bufMessage,BUFFER_MESSAGE_SIZE) <0){
+    if(send(socket_,bufMessage,BUFFER_MESSAGE_SIZE,0) <0){
        this->error("Cannot send message: ");
        exit(1);
     }
@@ -167,7 +176,7 @@ void Connection::run()
     if(ETATCO) bcopy("CONNECT-OK", bufMessage, BUFFER_MESSAGE_SIZE);
     else bcopy("CONNECT-NO", bufMessage, BUFFER_MESSAGE_SIZE);
 
-    if(write(socket_,bufMessage,BUFFER_MESSAGE_SIZE) <0){
+    if(send(socket_,bufMessage,BUFFER_MESSAGE_SIZE,0) <0){
        this->error("Cannot send message to client: "+uid_.toString());
        exit(1);
     }
@@ -180,7 +189,7 @@ void Connection::run()
             qDebug()<<"Waiting for question from client";
             int length;
             memset(bufMessage,'\0',BUFFER_MESSAGE_SIZE);
-            if((length = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE -1)) > 0){                
+            if((length = ::recv(socket_, bufMessage, BUFFER_MESSAGE_SIZE -1,0)) > 0){
                 qDebug()<<bufMessage;
                 if(strcmp(bufMessage,"DISCONNECT") == 0){
                     //client asking to quit
@@ -219,7 +228,7 @@ void Connection::sendMessage(char * s)
     char bufMessage[BUFFER_MESSAGE_SIZE];
     bcopy(s, bufMessage, BUFFER_MESSAGE_SIZE);
 
-    if(write(socket_,bufMessage,BUFFER_MESSAGE_SIZE) <0){
+    if(send(socket_,bufMessage,BUFFER_MESSAGE_SIZE,0) <0){
        this->error("Cannot send message: ");
        exit(1);
     }
@@ -229,7 +238,7 @@ void Connection::receiveMessage(char * s)
 {
     int longueur;
     char bufMessage[BUFFER_MESSAGE_SIZE];
-    if((longueur = ::read(socket_, bufMessage, BUFFER_MESSAGE_SIZE)) > 0){
+    if((longueur = ::recv(socket_, bufMessage, BUFFER_MESSAGE_SIZE,0)) > 0){
     }
     bcopy(bufMessage, s, BUFFER_MESSAGE_SIZE);
 
